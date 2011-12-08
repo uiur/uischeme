@@ -23,10 +23,10 @@ parseSymbol = do first <- letter <|> symbol
 parseList :: Parser Val
 parseList = liftM List $ sepBy parseExpr spaces
 
-parseDottedList :: Parser Val
-parseDottedList = do head <- endBy parseExpr spaces
-                     tail <- char '.' >> spaces >> parseExpr
-                     return $ DottedList head tail
+parseDotList :: Parser Val
+parseDotList = do head <- endBy parseExpr spaces
+                  tail <- char '.' >> spaces >> parseExpr
+                  return $ DotList head tail
 
 parseNumber :: Parser Val
 parseNumber = liftM (Number . read) $ many1 digit
@@ -47,7 +47,7 @@ parseExpr = parseSymbol
         <|> parseString
         <|> parseNumber
         <|> do char '('
-               x <- try parseList <|> parseDottedList
+               x <- try parseList <|> parseDotList
                char ')'
                return x
 

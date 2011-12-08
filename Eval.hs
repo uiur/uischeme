@@ -12,7 +12,10 @@ primitives = [("+", numberBinop (+)),
               ("<", boolBinop (<)),
               ("<=", boolBinop (<=)),
               (">", boolBinop (>)),
-              (">=", boolBinop (>=))
+              (">=", boolBinop (>=)),
+              ("cons", cons),
+              ("car", car),
+              ("cdr", cdr)
               ]
               
 
@@ -41,8 +44,23 @@ eval val@(Bool _)   = val
 eval (List [(Symbol "if"), cond, thenVal, elseVal]) = eval $ if t then thenVal else elseVal
                         where 
                           t = valToBool $ eval cond
-
 eval (List ((Symbol x):args)) = apply x $ map eval args
 
+-- car, cdr, cons
+car  :: [Val] -> Val
+car [List (x:xs)] = x
+car [DotList (x:xs) _] = x
+
+cdr  :: [Val] -> Val
+cdr [List (x:xs)] = List xs
+cdr [DotList [x] y] = y
+cdr [DotList (x:xs) y] = DotList xs y
+
+cons :: [Val] -> Val
+cons [x, (List y)]= List (x:y)
+cons [x, (DotList y z)] = DotList (x:y) z
+cons [x, y] = DotList [x] y
+
+-- For Test
 re :: String -> Val
 re = eval . readExpr
