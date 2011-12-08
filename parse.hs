@@ -1,23 +1,9 @@
 module Parse where
 
+import Types
 import Text.Parsec hiding (spaces)
 import Text.Parsec.String
 import Control.Monad
-  
-data Val = Symbol String
-         | List [Val]
-         | DottedList [Val] Val
-         | Number Integer
-         | String String
-         | Bool Bool
-
-instance Show Val where
-  show (Symbol xs) = xs
-  show (List xs) = "(" ++ (unwords $ map show xs) ++ ")"
-  show (Number n) = show n
-  show (String xs) = "\"" ++ xs ++ "\""
-  show (Bool True) = "#t"
-  show (Bool False) = "#f"
 
 spaces :: Parser ()
 spaces = skipMany1 space
@@ -35,7 +21,7 @@ parseSymbol = do first <- letter <|> symbol
                                _    -> Symbol result
 
 parseList :: Parser Val
-parseList = do liftM List $ sepBy parseExpr spaces
+parseList = liftM List $ sepBy parseExpr spaces
 
 parseDottedList :: Parser Val
 parseDottedList = do head <- endBy parseExpr spaces
@@ -65,3 +51,7 @@ parseExpr = parseSymbol
                char ')'
                return x
 
+readExpr :: String -> Val
+readExpr input = case parse parseExpr "(ui)" input of
+                      Left err -> String $ "No match: " ++ show err
+                      Right val -> val
