@@ -51,7 +51,7 @@ parseExpr = parseSymbol
                char ')'
                return x
 
-readExpr :: String -> Val
+readExpr :: String -> ThrowsError Val
 readExpr input = case parse parseExpr "(ui)" input of
-                      Left err -> String $ "No match: " ++ show err
-                      Right val -> val
+                      Left err -> throwError $ Parser err
+                      Right val -> return val
