@@ -38,16 +38,21 @@ valToBool _ = True
 apply :: String -> [Val] -> ThrowsError Val
 apply func args = maybe (throwError $ NotFunction "Unrecognized primitive function args" func) ($ args) $ lookup func primitives 
 
-eval :: Val -> ThrowsError Val
-eval val@(Number _) = return val
-eval val@(String _) = return val
-eval val@(Bool _)   = return val
-eval (List [(Symbol "quote"), x]) = return x
-eval (List [(Symbol "if"), cond, thenVal, elseVal]) = eval $ if t then thenVal else elseVal
-                        where 
-                          t = valToBool . extractValue $ eval cond
-eval (List ((Symbol f):args)) = mapM eval args >>= apply f
-eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm 
+eval :: Env -> Val -> IOThrowsError Val
+eval _ val@(Number _) = return val
+eval _ val@(String _) = return val
+eval _ val@(Bool _)   = return val
+eval env (Symbol var) = getVar env var
+eval _ (List [(Symbol "quote"), x]) = return x
+eval env (List [(Symbol "if"), cond, thenVal, elseVal]) = 
+                            do result <- eval env cond
+                               case result of
+                                 Bool True -> eval env thenVal
+                                 _         -> eval env elseVal 
+eval env (List [Symbol "set!", Symbol var, form]) = eval env form >>= setVar env var
+eval env (List [Symbol "define", Symbol var, form]) = eval env form >>= defineVar env var 
+eval env (List ((Symbol f):args)) = mapM (eval env) args >>= liftThrows . apply f
+eval env badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm 
 
 -- car, cdr, cons
 car  :: [Val] -> ThrowsError Val
@@ -69,6 +74,4 @@ cons [x, (DotList y z)] = return $ DotList (x:y) z
 cons [x, y] = return $ DotList [x] y
 cons badArgList = throwError $ NumArgs 2 badArgList
 
--- For Test
-rep :: String -> IO ()
-rep xs = putStrLn . extractValue . trapError . liftM show $ readExpr xs >>= eval
+
